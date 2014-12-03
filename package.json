@@ -1,0 +1,23 @@
+{
+  "name": "dropbox-protos",
+  "version": "1.0.0",
+  "description": "Contains protocol buffer definitions of the Dropbox Apis.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hassox/dropbox-protos.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/hassox/dropbox-protos/issues"
+  },
+  "homepage": "https://github.com/hassox/dropbox-protos",
+  "dependencies": {
+    "mach": "^1.0.0-rc3",
+    "fender": "hassox/fender.js#mach-update"
+  }
+}
