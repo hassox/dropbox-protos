@@ -1,0 +1,28 @@
+package dropbox.core.v1.services;
+
+import "fender/v1.proto";
+import "fender/v1/field_options.proto";
+import "dropbox/core/v1/data/account.proto";
+
+/**
+* Use to specify language settings for user error messages and other language specific text.
+* See the [notes on the dropbox documentation](https://www.dropbox.com/developers/core/docs#param.locale) for more information about supported locales.
+*/
+message AccountInfoRequest {
+  optional string locale = 1 [default = "en-US"];
+}
+
+service AccountService {
+  option (fender.v1.fender_service) = {
+    address: "https://api.dropbox.com",
+    transport: HTTPS,
+    request_format: JSON
+  };
+
+  rpc Info (AccountInfoRequest) returns (data.Account) {
+    option (fender.v1.fender_method) = {
+      http_method: GET,
+      http_path: "/1/account/info"
+    };
+  }
+}

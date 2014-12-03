@@ -1,0 +1,75 @@
+package dropbox.core.v1.services;
+
+import "fender/v1.proto";
+import "fender/v1/field_options.proto";
+import "dropbox/core/v1/common.proto";
+
+enum Oauth2GrantType {
+  authorization_code = 1;
+}
+
+message Oauth2TokenRequest {
+  /**
+  * The code acquired by directing users to /oauth2/authorize?response_type=code
+  */
+  optional string code = 1 [(fender.v1.fender_field).present = true];
+
+  /** The grant type, which must be 'authorization_code'. */
+  optional Oauth2GrantType grant_type = 2 [default=authorization_code, (fender.v1.fender_field).present = true];
+
+  /** 
+  * If credentials are passed in POST parameters, this parameter should be present and should be the app's key (found in the [App Console](https://www.dropbox.com/developers/apps)).
+  */
+  optional string client_id = 3 [(fender.v1.fender_field).present = true];
+
+  /**
+  * If credentials are passed in POST parameters, this parameter should be present and should be the app's secret.
+  */
+  optional string secret = 4 [(fender.v1.fender_field).present = true];
+
+  /**
+  * Only used to validate that it matches the original /oauth2/authorize, not used to redirect again.
+  */
+  optional string redirect_uri = 5 [(fender.v1.fender_field).present = true];
+}
+
+message Oauth2TokenResponse {
+  optional string access_token = 1;
+  optional string token_type = 2 [default="bearer"];
+  optional string uid = 3;
+}
+
+
+service Oauth2Service {
+  option (fender.v1.fender_service) = {
+    address: "https://api.dropbox.com",
+    transport: HTTPS,
+    request_format: JSON
+  };
+
+
+  /**
+  * This endpoint only applies to apps using the authorization code flow. 
+  * An app calls this endpoint to acquire a bearer token once the user has authorized the app.
+  *
+  * Calls to /oauth2/token need to be authenticated using the apps's key and secret. 
+  * These can either be passed as POST parameters or via HTTP basic authentication. 
+  * If basic authentication is used, the app key should be provided as the username, and the app secret should be provided as the password.
+  */
+  rpc Token (Oauth2TokenRequest) returns (Oauth2TokenResponse) {
+    option (fender.v1.fender_method) = {
+      http_path: "/1/oauth2/token",
+      http_method: POST
+    };
+  }
+
+  /**
+  * Disables the access token used to authenticate the call. This method works for OAuth 1 and OAuth 2 tokens.
+  */
+  rpc DisableToken (Empty) returns (Empty) {
+    option (fender.v1.fender_method) = {
+      http_path: "/1/disable_access_token",
+      http_method: POST
+    };
+  }
+}

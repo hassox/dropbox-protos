@@ -1,0 +1,5 @@
+package dropbox.core.v1;
+
+/** An empty message */
+message Empty {
+}

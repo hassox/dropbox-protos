@@ -1,0 +1,38 @@
+package dropbox.core.v1.data;
+
+import "public/international/country_code.proto";
+
+message Team {
+  /** The name of the team the user belongs to. */
+  optional string name = 1;
+}
+
+message QuotaInfo {
+  /** The user's used quota outside of shared folders (bytes). */
+  optional uint64 normal = 1;
+
+  /** The user's used quota in shared folders (bytes). */
+  optional uint64 shared = 2;
+
+  /** The user's total quota allocation (bytes). */
+  optional uint64 quota = 3;
+}
+
+message Account {
+  /** The user's [referral link](https://www.dropbox.com/referrals). */
+  optional string referral_link = 1;
+
+  /** The user's display name. */
+  optional string display_name = 2;
+
+  /** The user's unique Dropbox ID. */
+  optional string uid = 3;
+
+  /** The user's two-letter country code, if available. */
+  optional public.international.CountryCode country = 4;
+
+  /** If the user belongs to a team, contains team information. Otherwise, null. */
+  optional Team team = 5;
+
+  optional QuotaInfo quota_info = 6;
+}
