@@ -1,0 +1,157 @@
+package dropbox.core.v1.data;
+
+enum FileRootLevel {
+  dropbox = 1;
+  app_folder = 2;
+}
+
+message User {
+  optional string uid = 1;
+  optional string display_name = 2;
+
+  /** if the linked account is a member of a Dropbox for Business team, same_team (whether the user is on the same team as the linked account */
+  optional bool same_team = 3;
+}
+
+message PhotoInfo {
+  /** creation time */
+  optional string time_taken = 1;
+
+  /** GPS coordinates  */
+  optional string lat_long = 2;
+}
+
+message VideoInfo {
+  /** creation time */
+  optional string time_taken = 1;
+
+  /** GPS coordinates  */
+  optional string lat_long = 2;
+
+  /** the length of the video in milliseconds */
+  optional uint32 duration = 3;
+}
+
+/**
+* At the time of writing this object is in beta. Please [check the documentation](https://www.dropbox.com/developers/core/docs#metadata)
+*/
+message SharedFolder {
+  optional string id = 1;
+  repeated User members = 2;
+
+}
+
+message FileMetadata {
+  /**
+  * A human-readable description of the file size (translated by locale).
+  */
+  optional string size = 1;
+
+  /**
+  * The file size in bytes.
+  */
+  optional uint64 bytes = 2;
+
+  /**
+  * Returns the canonical path to the file or folder.
+  */
+  optional string path = 3;
+
+  /**
+  * Whether the given entry is a folder or not.
+  */
+  optional bool is_dir = 4;
+
+  /**
+  * Whether the given entry is deleted (only included if deleted files are being returned).
+  */
+  optional bool is_deleted = 5;
+
+  /**
+  * A unique identifier for the current revision of a file. 
+  * This field is the same rev as elsewhere in the API and can be used to detect changes and avoid conflicts.
+  */
+  optional string rev = 6;
+  
+  /**
+  * A folder's hash is useful for indicating changes to the folder's contents in later calls to Metadata. 
+  * This is roughly the folder equivalent to a file's rev.
+  */
+  optional string hash = 7;
+
+  /**
+  * True if the file is an image that can be converted to a thumbnail via the Thumbnails call.
+  */
+  optional bool thumb_exists = 8;
+
+  /**
+  * Only returned when the include_media_info parameter is true and the file is an image.
+  * A dictionary that includes the creation time (time_taken) and the GPS coordinates (lat_long).
+  */
+  optional PhotoInfo photo_info = 9;
+
+  /** 
+  * Only returned when the include_media_info parameter is true and the file is a video.
+  * A dictionary that includes the creation time (time_taken), the GPS coordinates (lat_long), and the length of the video in milliseconds (duration).
+  */
+  optional VideoInfo video_info = 10;
+
+  /**
+  * The name of the icon used to illustrate the file type in Dropbox's [icon library](https://www.dropbox.com/static/images/dropbox-api-icons.zip).
+  */
+  optional string icon = 11;
+
+  /**
+  * The last time the file was modified on Dropbox, in the standard date format (not included for the root folder).
+  */
+  optional string modified = 12;
+
+  /**
+  * For files, this is the modification time set by the desktop client when the file was added to Dropbox, in the standard date format. 
+  * Since this time is not verified (the Dropbox server stores whatever the desktop client sends up), 
+  * this should only be used for display purposes (such as sorting) and not, for example, to determine if a file has changed or not.
+  */
+  optional string client_mtime = 13;
+
+  /**
+  * The root or top-level folder depending on your access level.
+  * All paths returned are relative to this root level. 
+  * Permitted values are either dropbox or app_folder.
+  */
+  optional FileRootLevel root = 14;
+
+  /**
+  * A deprecated field that semi-uniquely identifies a file. Use rev instead.
+  */
+  optional int32 revision = 15 [deprecated=true];
+
+  /**
+  * This field will be included for shared folders. 
+  * The value is a dictionary with the field id.
+  * If the include_membership parameter is passed, there will additionally be a members field with a list of users. 
+  * Each member of the list includes a user dictionary with the fields uid (user ID), display_name, and, if the linked account is a member of a Dropbox for Business team, same_team (whether the user is on the same team as the linked account). 
+  * Each member of the list also includes role (the user's role) and active (a Boolean indicating whether the user is an active member of the shared folder).
+  */
+  optional SharedFolder shared_folder = 16;
+
+  /**
+  * For shared folders, this field specifies whether the user has read-only access to the folder. 
+  * For files within a shared folder, this specifies the read-only status of the parent shared folder.
+  */
+  optional bool read_only = 17;
+
+  /** For files within a shared folder, this field specifies the ID of the containing shared folder. */
+  optional string parent_shared_folder_id = 18;
+
+  /**
+  * For files within a shared folder, this field specifies which user last modified this file. 
+  * The value is a user.
+  * If the modifying user no longer exists the value will be null
+  */
+  optional User modifier = 19;
+
+  repeated FileMetadata contents = 20;
+
+  optional string mime_type = 21;
+}
+
