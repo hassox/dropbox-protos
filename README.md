@@ -33,3 +33,27 @@ Then pilgrimize
 
 Open up [pilgrim](http://pilgrim.fender.io)
 
+## Caveats
+
+Beware any endpoints that deal with raw files like `GET /files` or `POST|PUT /files_put`.
+Protocol buffers are a message format (like JSON) and is suited to short sharp messages.
+Whilst it's possible to use protos to send files as bytes, there is no streaming.
+You'll need to load the entire file into memory completely in order to work with the proto message.
+
+Because of this reason, the endpoints for `GET /files` and `POST|PUT /files_put` are not implemented in protos.
+
+The following endpoints are not implemented:
+
+### Core API
+
+File endpoints
+
+- `GET /files`
+- `POST|PUT /files_put`
+
+These endpoints aren't implemented because the return type is a list with differently shaped entries.
+i.e. [<path>, FileMetadata], these cannot be described with protocol buffers.
+
+- GET `/delta`
+- POST `/delta/latest_cursor`
+- GET `/longpoll_delta`

@@ -57,18 +57,134 @@ message MetadataRequest {
   optional bool include_membership = 9 [default=false];
 }
 
-service FilesService {
+/**
+* Obtains metadata for the previous revisions of a file.
+*
+* Only revisions up to thirty days old are available (or more if the Dropbox user has Packrat). 
+* You can use the revision number in conjunction with the /restore call to revert the file to its previous state.
+*/
+message FileRevisionsRequest {
+  /** The path to the file. */
+  optional string path = 1 [(fender.v1.fender_field).present = true];
+
+  /** Default is 10. Max is 1,000. Up to this number of recent revisions will be returned. */
+  optional uint32 rev_limit = 2 [default=10, (fender.v1.fender_field) = { max: 1000, min: 1 }];
+
+  /** The metadata returned will have its size field translated based on the given locale. */
+  optional string locale = 3 [default="en-US"];
+}
+
+message FileMetadataList {
+  repeated data.FileMetadata metadata = 1;
+}
+
+/**
+* Restores a file path to a previous revision.
+*
+* Unlike downloading a file at a given revision and then re-uploading it, this call is atomic.
+* It also saves a bunch of bandwidth
+*/
+message FileRestoreRequest {
+  /** The path to the file. */
+  optional string path = 1 [(fender.v1.fender_field).present = true];
+
+  /** The revision of the file to restore. */
+  optional string rev = 2 [(fender.v1.fender_field).present = true];
+
+  /** The metadata returned will have its size field translated based on the given locale. */
+  optional string locale = 3 [default="en-US"];
+}
+
+
+/**
+* Returns metadata for all files and folders whose filename contains the given search string as a substring.
+*
+* Searches are limited to the folder path and its sub-folder hierarchy provided in the call.
+*/
+message SearchRequest {
+  /** The path to the folder you want to search from. */
+  optional string path = 1 [(fender.v1.fender_field).present = true];
+
+  /**
+  * The search string. This string is split (on spaces) into individual words.
+  * Files and folders will be returned if they contain all words in the search string.
+  */
+  optional string query = 2 [(fender.v1.fender_field).present = true];
+
+  /** The maximum and default value is 1,000. No more than file_limit search results will be returned. */
+  optional uint32 file_limit = 3 [default=1000];
+
+  /** If this parameter is set to true, then files and folders that have been deleted will also be included in the search. */
+  optional bool include_deleted = 4 [default=false];
+
+  /** The metadata returned will have its size field translated based on the given locale. */
+  optional string locale = 5 [ default="en-US"];
+
+  /**
+  *  If true, metadata for a shared folder will include a list of the members of the shared folder.
+  *
+  * Note: This feature is in beta at the time of writing.
+  */
+  optional bool include_membership = 6 [default=false];
+}
+
+message SearchResponse {
+}
+
+service FileDataService {
   option (fender.v1.fender_service) = {
     address: "https://api.dropbox.com",
     transport: HTTPS,
     request_format: JSON
   };
 
+  /** Retrieves file and folder metadata. */
   rpc Metadata (MetadataRequest) returns (data.FileMetadata) {
     option (fender.v1.fender_method) = {
       http_method: GET,
       http_path: "/1/metadata/auto/{+path}"
     };
   }
+
+  /**
+  * Obtains metadata for the previous revisions of a file.
+  *
+  * Only revisions up to thirty days old are available (or more if the Dropbox user has Packrat). 
+  * You can use the revision number in conjunction with the /restore call to revert the file to its previous state.
+  */
+  rpc Revisions (FileRevisionsRequest) returns (FileMetadataList) {
+    option (fender.v1.fender_method) = {
+      http_method: GET,
+      http_path: "/1/revisions/auto/{+path}",
+      response_body_field: { name: "metadata" }
+    };
+  }
+
+  /**
+  * Restores a file path to a previous revision.
+  *
+  * Unlike downloading a file at a given revision and then re-uploading it, this call is atomic.
+  * It also saves a bunch of bandwidth
+  */
+  rpc Restore (FileRestoreRequest) returns (data.FileMetadata) {
+    option (fender.v1.fender_method) = {
+      http_method: POST,
+      http_path: "/1/restore/auto/{+path}"
+    };
+  }
+
+  /**
+  * Returns metadata for all files and folders whose filename contains the given search string as a substring.
+  *
+  * Searches are limited to the folder path and its sub-folder hierarchy provided in the call.
+  */
+  rpc Search (SearchRequest) returns (FileMetadataList) {
+    option (fender.v1.fender_method) = {
+      http_method: GET,
+      http_path: "/1/search/auto/{+path}"
+      response_body_field: { name: "metadata" }
+    };
+  }
+
 }
 
