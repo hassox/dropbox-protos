@@ -8,7 +8,8 @@ registry.register(require('../proto-bundle'));
 Fender.prepareClientServiceHandlers(scope.services());
 
 AccountService = scope.lookup('services.AccountService');
-token = "<insert your token here>";
+
+token = require('./creds').token;
 
 new AccountService({ headers: { Authorization: "Bearer " + token }}).Info()
 .then(function(account){

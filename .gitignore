@@ -1,3 +1,4 @@
 .proto_cache
 node_modules
 proto-bundle.json
+examples/creds.json
