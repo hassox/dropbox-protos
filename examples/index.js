@@ -3,7 +3,7 @@ var Fender = require('fender/client'),
     registry = Fender.Protob.registry,
     scope = registry.scope('dropbox.core.v1'),
     inspect = function(obj) { return require('util').inspect(obj, { depth: null }); },
-    AccountService, FilesService;
+    AccountService, FileDataService;
 
 // Create constructors in the registry for messages and services as found in your proto bundle
 registry.register(require('../proto-bundle'));
@@ -13,7 +13,7 @@ Fender.prepareClientServiceHandlers(scope.services());
 
 // Fetch the account service constructor
 AccountService = scope.lookup('services.AccountService');
-FilesService = scope.lookup('services.FilesService');
+FileDataService = scope.lookup('services.FileDataService');
 
 token = require('./creds').token;
 
@@ -30,7 +30,7 @@ new AccountService({ headers: { Authorization: "Bearer " + token }}).Info()
 .then(function(account){
   console.log("The account is:", inspect(account.asJSON()));
 
-  return new FilesService({stack: dropboxAuth}).Metadata({path: "/", list: "true"})
+  return new FileDataService({stack: dropboxAuth}).Metadata({path: "/", list: "true"})
   .then(function(response) {
     console.log("THE FILE RESULT:", inspect(response.asJSON()));
   });
