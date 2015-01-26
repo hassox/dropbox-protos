@@ -3,6 +3,7 @@ package dropbox.core.v1.services;
 import "fender/v1.proto";
 import "fender/v1/field_options.proto";
 import "dropbox/core/v1/data/file.proto";
+import "dropbox/core/v1/common.proto";
 
 message MetadataRequest {
   /** The path to the file or folder. */
@@ -128,23 +129,58 @@ message SearchRequest {
   optional bool include_membership = 6 [default=false];
 }
 
-message SearchResponse {
+message CreateShareRequest {
+  /** The path to the file or folder you want to link to. */
+  optional string path = 1 [(fender.v1.fender_field).present = true];
+
+  /** Use to specify language settings for user error messages and other language specific text. */
+  optional string locale = 2 [default="en-US"];
+
+  /**
+  * When true (default), the URL returned will be shortened using the Dropbox URL shortener. 
+  * If false, the URL will link directly to the file's preview page.
+  */
+  optional bool short_url = 3 [default=true];
+}
+
+/**
+* Similar to Shares.
+* The difference is that this bypasses the Dropbox webserver, used to provide a preview of the file, so that you can effectively stream the contents of your media.
+* This URL should not be used to display content directly in the browser.
+* 
+* The Media link expires after four hours, allotting enough time to stream files, but not enough to leave a connection open indefinitely.
+*/
+message MediaRequest {
+
+  /** The path to the media file you want a direct link to. */
+  optional string path = 1 [(fender.v1.fender_field).present = true];
+
+  /** Use to specify language settings for user error messages and other language specific text. */
+  optional string locale = 2 [ default="en-US"];
+
+}
+
+/**
+* Creates and returns a copy_ref to a file. 
+* This reference string can be used to copy that file to another user's Dropbox by passing it in as the from_copy_ref parameter on FileOps#Copy
+*/
+message CreateCopyRefRequest {
+  /** The path to the file you want a copy_ref to refer to. */
+  optional string path = 1 [(fender.v1.fender_field).present = true];
+}
+
+message GetSharedFolderRequest {
+  /** The ID of a specific shared folder. */
+  optional string id = 1 [(fender.v1.fender_field).present = true];
 }
 
 service FileDataService {
   option (fender.v1.fender_service) = {
     address: "https://api.dropbox.com",
     transport: HTTPS,
-    request_format: JSON
+    request_format: JSON,
+    cors_enabled: true
   };
-
-  /** Retrieves file and folder metadata. */
-  rpc Metadata (MetadataRequest) returns (data.FileMetadata) {
-    option (fender.v1.fender_method) = {
-      http_method: GET,
-      http_path: "/1/metadata/auto/{+path}"
-    };
-  }
 
   /**
   * Obtains metadata for the previous revisions of a file.
@@ -181,10 +217,68 @@ service FileDataService {
   rpc Search (SearchRequest) returns (FileMetadataList) {
     option (fender.v1.fender_method) = {
       http_method: GET,
-      http_path: "/1/search/auto/{+path}"
+      http_path: "/1/search/auto/{+path}",
       response_body_field: { name: "metadata" }
     };
   }
 
+  /**
+  * Creates and returns a [shared link](https://www.dropbox.com/help/167) to a file or folder.
+  */
+  rpc Shares (CreateShareRequest) returns (data.ShareLink) {
+    option (fender.v1.fender_method) = {
+      http_method: POST,
+      http_path: "/1/shares/auto/{+path}"
+    };
+  }
+
+  /** 
+  * Similar to Shares. 
+  * The difference is that this bypasses the Dropbox webserver, used to provide a preview of the file, so that you can effectively stream the contents of your media. 
+  * This URL should not be used to display content directly in the browser.
+  *
+  * The Media link expires after four hours, allotting enough time to stream files, but not enough to leave a connection open indefinitely.
+  */
+  rpc Media (MediaRequest) returns (data.MediaLink) {
+    option (fender.v1.fender_method) = {
+      http_method: POST,
+      http_path: "/1/media/auto/{+path}"
+    };
+  }
+
+  /**
+  * Creates and returns a copy_ref to a file. 
+  * This reference string can be used to copy that file to another user's Dropbox by passing it in as the from_copy_ref parameter on FileOps#Copy
+  */
+  rpc CopyRef (CreateCopyRefRequest) returns (data.CopyRef) {
+    option (fender.v1.fender_method) = {
+      http_method: GET,
+      http_path: "/1/copy_ref/auto/{+path}"
+    };
+  }
+
+  /**
+  * Returns a list of all shared folders the authenticated user has access to or metadata about a specific shared folder.
+  *
+  * This API call requires Full Dropbox or File type permissions.
+  */
+  rpc SharedFolders (Empty) returns (FileMetadataList) {
+    option (fender.v1.fender_method) = {
+      http_method: GET,
+      http_path: "/1/shared_folders"
+    };
+  }
+
+  /**
+  * Returns a list of one shared folder the authenticated user has access to or metadata about a specific shared folder.
+  *
+  * This API call requires Full Dropbox or File type permissions.
+  */
+  rpc SharedFolder (GetSharedFolderRequest) returns (FileMetadataList) {
+    option (fender.v1.fender_method) = {
+      http_method: GET,
+      http_path: "/1/shared_folders/{+id}"
+    };
+  }
 }
 

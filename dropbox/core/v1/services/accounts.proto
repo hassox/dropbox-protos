@@ -16,7 +16,8 @@ service AccountService {
   option (fender.v1.fender_service) = {
     address: "https://api.dropbox.com",
     transport: HTTPS,
-    request_format: JSON
+    request_format: JSON,
+    cors_enabled: true
   };
 
   rpc Info (AccountInfoRequest) returns (data.Account) {

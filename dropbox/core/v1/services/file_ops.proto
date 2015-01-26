@@ -1,0 +1,127 @@
+package dropbox.core.v1.services;
+
+import "fender/v1.proto";
+import "fender/v1/field_options.proto";
+import "dropbox/core/v1/data/file.proto";
+
+/** The root relative to which from_path and to_path are specified. */
+enum FileOpsRootLevel {
+  auto = 1;
+  sandbox = 2;
+  dropbox = 3;
+}
+
+message FileCopyRequest {
+  /**
+  * The root relative to which from_path and to_path are specified. 
+  */
+  optional FileOpsRootLevel root = 1 [ default=auto, (fender.v1.fender_field).present = true];
+
+  /** Specifies the file or folder to be copied from relative to root. */
+  optional string from_path = 2;
+
+  /** Specifies the destination path, including the new name for the file or folder, relative to root. */
+  optional string to_path = 3;
+
+  /** The metadata returned will have its size field translated based on the given locale. */
+  optional string locale = 4 [default="en-US"];
+
+  /** Specifies a copy_ref generated from a previous FileDataService#CopyRef call. Must be used instead of the from_path parameter. */
+  optional string from_copy_ref = 5;
+}
+
+message CreateFolderRequest {
+  /**
+  * The root relative to which path is specified
+  */
+  optional FileOpsRootLevel root = 1 [ default=auto, (fender.v1.fender_field).present = true];
+
+  /**  The path to the new folder to create relative to root. */
+  optional string path = 2 [(fender.v1.fender_field).present = true];
+
+  /** The metadata returned will have its size field translated based on the given locale. */
+  optional string locale = 3 [ default="en-US"];
+}
+
+message DeleteRequest {
+  /**
+  * The root relative to which path is specified
+  */
+  optional FileOpsRootLevel root = 1 [ default=auto, (fender.v1.fender_field).present = true];
+
+  /**  The path to the file or folder to delete relative to root. */
+  optional string path = 2 [(fender.v1.fender_field).present = true];
+
+  /** The metadata returned will have its size field translated based on the given locale. */
+  optional string locale = 3 [ default="en-US"];
+}
+
+message MoveRequest {
+  /**
+  * The root relative to which path is specified
+  */
+  optional FileOpsRootLevel root = 1 [ default=auto, (fender.v1.fender_field).present = true];
+
+  /** Specifies the file or folder to be moved from relative to root */
+  optional string from_path = 2 [(fender.v1.fender_field).present = true];
+
+  /** Specifies the destination path, including the new name for the file or folder, relative to root. */
+  optional string to_path = 3 [(fender.v1.fender_field).present = true];
+
+  /** The metadata returned will have its size field translated based on the given locale. */
+  optional string locale = 4 [ default="en-US"];
+}
+
+/**
+* The various fileops calls provide the standard file operations.
+* Files and folders can be moved, copied, or deleted.
+* Folders can be created.
+*/
+service FileOpsService {
+  option (fender.v1.fender_service) = {
+    address: "https://api.dropbox.com",
+    transport: HTTPS,
+    request_format: JSON,
+    cors_enabled: true
+  };
+
+  /**
+  * Copies a file or folder to a new location.
+  */
+  rpc Copy (FileCopyRequest) returns (data.FileMetadata) {
+    option (fender.v1.fender_method) = {
+      http_method: POST,
+      http_path: "/1/fileops/copy"
+    };
+  }
+
+  /** Creates a folder. */
+  rpc CreateFolder (CreateFolderRequest) returns (data.FileMetadata) {
+    option (fender.v1.fender_method) = {
+      http_method: POST,
+      http_path: "/1/fileops/create_folder"
+    };
+  }
+
+  /**
+  * Deletes a folder.
+  * Returns: Metadata for the deleted file or folder.
+  */
+  rpc Delete (DeleteRequest) returns (data.FileMetadata) {
+    option (fender.v1.fender_method) = {
+      http_method: POST,
+      http_path: "/1/fileops/delete"
+    };
+  }
+
+  /**
+  * Moves a file or folder to a new location.
+  * Returns: Metadata for the moved file or folder
+  */
+  rpc Move (MoveRequest) returns (data.FileMetadata) {
+    option (fender.v1.fender_method) = {
+      http_method: POST,
+      http_path: "/1/fileops/move"
+    };
+  }
+}

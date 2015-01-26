@@ -1,8 +1,59 @@
 package dropbox.core.v1.data;
 
+enum ImageFormat {
+  jpeg = 1;
+  png = 2;
+}
+
+enum ThumbnailSize {
+  xs = 1; // 32x32
+  s = 2;  // 64x64
+  m = 3;  // 128x128
+  l = 4;  // 640x640
+  xl = 5; // 1024x768
+}
+
 enum FileRootLevel {
   dropbox = 1;
   app_folder = 2;
+}
+
+enum Visibility {
+  /** Anyone can view */
+  PUBLIC = 1;
+
+  /** only the owner's team can view */
+  TEAM_ONLY = 2;
+
+  /** a password is required */
+  PASSWORD = 3;
+
+  /** a combination of "TEAM_ONLY" and "PASSWORD" restrictions */
+  TEAM_AND_PASSWORD = 4;
+
+  /** [only members of the enclosing shared folder can view](https://www.dropbox.com/help/6636) */
+  SHARED_FOLDER_ONLY = 5;
+}
+
+message ShareLink {
+  optional string url = 1;
+  optional string expires = 2;
+  optional Visibility visibility = 3;
+}
+
+message MediaLink {
+  optional string url = 1;
+  optional string expires = 2;
+}
+
+/**
+* A copy_ref to the specified file. 
+* For compatibility reasons, it returns the link's expiration date in Dropbox's usual date format. 
+* All links are currently set to expire far enough in the future so that expiration is effectively not an issue.
+*/
+message CopyRef {
+  optional string copy_ref = 1;
+  optional string expires = 2;
 }
 
 message User {
@@ -90,7 +141,7 @@ message FileMetadata {
   */
   optional PhotoInfo photo_info = 9;
 
-  /** 
+  /**
   * Only returned when the include_media_info parameter is true and the file is a video.
   * A dictionary that includes the creation time (time_taken), the GPS coordinates (lat_long), and the length of the video in milliseconds (duration).
   */
@@ -155,4 +206,13 @@ message FileMetadata {
   optional string mime_type = 21;
 }
 
+message File {
+  optional bytes content = 1;
+  optional FileMetadata metadata = 2;
+}
 
+message FilePreview {
+  optional bytes content = 1;
+  optional string content_type = 2;
+  optional uint32 original_content_length = 3;
+}

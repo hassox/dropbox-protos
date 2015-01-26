@@ -1,0 +1,279 @@
+package dropbox.core.v1.services;
+
+import "fender/v1.proto";
+import "fender/v1/field_options.proto";
+import "dropbox/core/v1/data/file.proto";
+
+/**
+* Downloads a file.
+*
+* WARNING: This method will load the entire file into memory
+*/
+message SimplePathRequest {
+  /** The path to the file */
+  optional string path = 1 [(fender.v1.fender_field).present = true];
+
+  /** The revision of the file to retrieve. This defaults to the most recent revision. */
+  optional string rev = 2;
+}
+
+/**
+* Gets a thumbnail for an image.
+*
+* Returns: A thumbnail of the specified image's contents.
+*          The image returned may be larger or smaller than the size requested, depending on the size and aspect ratio of the original image.
+*
+* Notes:
+* This method currently supports files with the following file extensions: "jpg", "jpeg", "png", "tiff", "tif", "gif", and "bmp".
+* Photos that are larger than 20MB in size won't be converted to a thumbnail.
+*/
+message ThumbnailRequest {
+  /** The path to the image file you want to thumbnail. */
+  optional string path = 1 [(fender.v1.fender_field).present = true];
+
+  /** 
+  * jpeg (default) or png. For images that are photos, jpeg should be preferred, while png is better for screenshots and digital art.
+  */
+  optional data.ImageFormat format = 2 [default=png];
+
+  optional data.ThumbnailSize size = 3 [default=s];
+}
+
+
+/**
+* Uploads a file using PUT semantics. i.e. Update or create.
+*
+* WARNING: This method will load the entire file into memory.
+*/
+message PutFileRequest {
+  /** The path to the file */
+  optional string path = 1 [(fender.v1.fender_field).present = true];
+
+  /** The file contents to be uploaded. */
+  optional bytes content = 2 [(fender.v1.fender_field).present = true];
+
+  /** The metadata returned on successful upload will have its size field translated based on the given locale. */
+  optional string locale = 3 [ default="en-US" ];
+
+  /**
+  * This value, either true (default) or false, determines whether an existing file will be overwritten by this upload. 
+  * If true, any existing file will be overwritten. 
+  * If false, the other parameters determine whether a conflict occurs and how that conflict is resolved.
+  */
+  optional bool overwrite = 4 [ default=true ];
+
+  /**
+  * If present, this parameter specifies the revision of the file you're editing.
+  * If parent_rev matches the latest version of the file on the user's Dropbox, that file will be replaced.
+  * Otherwise, a conflict will occur.
+  * If you specify a parent_rev and that revision doesn't exist, the file won't save (error 400).
+  * You can get the most recent rev by performing a call to FileDataService#Metadata.
+  */
+  optional string parent_rev = 5;
+
+  /**
+  * This value, either true (default) or false, determines what happens when there is a conflict. 
+  * If true, the file being uploaded will be automatically renamed to avoid the conflict. 
+  * For example, test.txt might be automatically renamed to test (1).txt.
+  *
+  * The new name can be obtained from the returned metadata. 
+  * If false, the call will fail with a 409 (Conflict) response code.
+  */
+  optional bool autorename = 6 [ default=true ];
+}
+
+message ChunkedUploadRequest {
+  /**
+  *
+  * A chunk of data from the file being uploaded. If resuming, the chunk should begin at the number of bytes into the file that equals the offset.
+  */
+  optional bytes content = 1 [(fender.v1.fender_field).present = true];
+
+  /** The unique ID of the in-progress upload on the server. If left blank, the server will create a new upload session. */
+  optional string upload_id = 2;
+
+  /** The byte offset of this chunk, relative to the beginning of the full file. 
+  * The server will verify that this matches the offset it expects. 
+  * If it does not, the server will return an error with the expected offset.
+  */
+  optional uint64 offset = 3;
+}
+
+message ChunkedUploadResponse {
+  optional string upload_id = 1;
+  optional uint64 offset = 2;
+  /** The date at which the upload expires */
+  optional string expires = 3;
+}
+
+
+/**
+* Completes an upload initiated by the ChunkedUpload method.
+* Saves a file uploaded via ChunkedUpload to a user's Dropbox.
+*
+* CommitChunkedUpload is similar to FilesPut. The main difference is that while FilesPut takes the file contents in the request body, CommitChunked_upload takes a parameter upload_id, which is obtained when the file contents are uploaded via ChunkedUpload.
+*/
+message CommitChunkedUploadRequest {
+  /** The full path to the file you want to write to. This parameter should not point to a folder. */
+  optional string path = 1 [(fender.v1.fender_field).present = true];
+
+  /** The metadata returned on successful upload will have its size field translated based on the given locale. */
+  optional string locale = 2 [ default="en-US" ];
+
+  /**
+  * This value, either true (default) or false, determines whether an existing file will be overwritten by this upload. 
+  * If true, any existing file will be overwritten. 
+  * If false, the other parameters determine whether a conflict occurs and how that conflict is resolved.
+  */
+  optional bool overwrite = 3 [ default=true ];
+
+  /**
+  * If present, this parameter specifies the revision of the file you're editing.
+  * If parent_rev matches the latest version of the file on the user's Dropbox, that file will be replaced.
+  * Otherwise, a conflict will occur.
+  * If you specify a parent_rev and that revision doesn't exist, the file won't save (error 400). 
+  * You can get the most recent rev by performing a call to Metadata.
+  */
+  optional string parent_rev = 4;
+
+  /**
+  * This value, either true (default) or false, determines what happens when there is a conflict.
+  * If true, the file being uploaded will be automatically renamed to avoid the conflict.
+  * (For example, test.txt might be automatically renamed to test (1).txt.)
+  * The new name can be obtained from the returned metadata.
+  * If false, the call will fail with a 409 (Conflict) response code.
+  */
+  optional bool autorename = 5 [ default = false ];
+
+  /**
+  * Used to identify the chunked upload session you'd like to commit.
+  */
+  optional string upload_id = 6;
+}
+
+/**
+* This service deals with manipulating the contents of files.
+*
+* WARNING: Methods within this service that utilize bytes require that the entire set of bytes are loaded into memory. (A result of using a message based format)
+* You cannot stream effectively with protobufs.
+*/
+service FileContentService {
+  option (fender.v1.fender_service) = {
+    address: "https://api-content.dropbox.com",
+    transport: HTTPS,
+    request_format: JSON,
+    cors_enabled: true
+  };
+
+  /**
+  * Downloads a file.
+  *
+  * WARNING: This method will load the entire file into memory
+  */
+  rpc Get(SimplePathRequest) returns (data.File) {
+    option (fender.v1.fender_method) = {
+      http_method: GET,
+      http_path: "/1/files/auto/{+path}",
+      response_body_field: { name: "content" }
+      response_header_fields: { header_name: 'x-dropbox-metadata', field: { name: "metadata" }, format: JSON }
+    };
+  }
+
+  /**
+  * Uploads a file using PUT semantics. i.e. Update or create.
+  *
+  * WARNING: This method will load the entire file into memory.
+  */
+  rpc Put(PutFileRequest) returns (data.FileMetadata) {
+    option (fender.v1.fender_method) = {
+      http_method: PUT,
+      http_path: "/1/files_put/auto/{+path}",
+      http_query_extra_params: true,
+      request_body_field: { name: "content" }
+    };
+  }
+
+  /**
+  * Gets a thumbnail for an image.
+  *
+  * Returns: A thumbnail of the specified image's contents.
+  *          The image returned may be larger or smaller than the size requested, depending on the size and aspect ratio of the original image.
+  *
+  * Notes:
+  * This method currently supports files with the following file extensions: "jpg", "jpeg", "png", "tiff", "tif", "gif", and "bmp".
+  * Photos that are larger than 20MB in size won't be converted to a thumbnail.
+  */
+  rpc Thumbnail (ThumbnailRequest) returns (data.File) {
+    option (fender.v1.fender_method) = {
+      http_method: GET,
+      http_path: "/1/thumbnails/auto/{+path}",
+      response_body_field: { name: "content" }
+      response_header_fields: { header_name: 'x-dropbox-metadata', field: { name: "metadata" }, format: JSON }
+    };
+  }
+
+  /**
+  * Gets a preview for a file.
+  *
+  * Returns:
+  * Data that represents a preview of the file.
+  * The Content-Type header will be either application/pdf or text/html.
+  * There is a Original-Content-Length header which contains the size of the preview data.
+  *
+  * Notes:
+  * Previews are only generated for the files with the following extensions: .doc, .docx, .docm, .ppt, .pps, .ppsx, .ppsm, .pptx, .pptm, .xls, .xlsx, .xlsm, .rtf, .pdf
+  */
+  rpc Preview (SimplePathRequest) returns (data.FilePreview) {
+    option (fender.v1.fender_method) = {
+      http_method: GET,
+      http_path: "/1/previews/auto/{+path}",
+      response_body_field: { name: "content" },
+      response_header_fields: { header_name: "content-type", field: { name: "content_type" } },
+      response_header_fields: { header_name: "original-content-length", field: { name: "original_content_length" } },
+    };
+  }
+
+  /**
+  * Uploads large files to Dropbox in multiple chunks.
+  * Also has the ability to resume if the upload is interrupted.
+  * This allows for uploads larger than the /files_put maximum of 150 MB.
+  *
+  * Typical usage:
+  *
+  * Send a PUT request to FileContentService#ChunkedUpload with the first chunk of the file without setting upload_id, and receive an upload_id in return.
+  * Repeatedly PUT subsequent chunks using the upload_id to identify the upload in progress and an offset representing the number of bytes transferred so far.
+  * After each chunk has been uploaded, the server returns a new offset representing the total amount transferred.
+  * After the last chunk, POST to FileContentService#CommitChunkedUpload to complete the upload.
+  * Chunks can be any size up to 150 MB.
+  * A typical chunk is 4 MB.
+  * Using large chunks will mean fewer calls to FileContentService#ChunkedUpload and faster overall throughput. 
+  * However, whenever a transfer is interrupted, you will have to resume at the beginning of the last chunk, so it is often safer to use smaller chunks.
+  *
+  * If the offset you submit does not match the expected offset on the server, the server will ignore the request and respond with a 400 error that includes the current offset.
+  * To resume upload, seek to the correct offset (in bytes) within the file and then resume uploading from that point.
+  *
+  * A chunked upload can take a maximum of 24 hours before expiring.
+  */
+  rpc ChunkedUpload (ChunkedUploadRequest) returns (ChunkedUploadResponse) {
+    option (fender.v1.fender_method) = {
+      http_method: PUT,
+      http_path: "/1/chunked_upload",
+      http_query_extra_params: true,
+      request_body_field: { name: "content" }
+    };
+  }
+
+  /**
+  * Completes an upload initiated by the ChunkedUpload method.
+  * Saves a file uploaded via ChunkedUpload to a user's Dropbox.
+  *
+  * CommitChunkedUpload is similar to FilesPut. The main difference is that while FilesPut takes the file contents in the request body, CommitChunked_upload takes a parameter upload_id, which is obtained when the file contents are uploaded via ChunkedUpload.
+  */
+  rpc CommitChunkedUpload (CommitChunkedUploadRequest) returns (data.FileMetadata) {
+    option (fender.v1.fender_method) = {
+      http_method: POST,
+      http_path: "/1/commit_chunked_upload/auto/{+path}"
+    };
+  }
+}
+

@@ -21,22 +21,29 @@ token = require('./creds').token;
 dropboxAuth = function(app) {
   return function(conn) {
     conn.request.headers.Authorization = "Bearer " + token;
+    console.log("MAKING A REQUEST");
     return conn.call(app);
   };
 };
+console.error("HERE");
 
+try {
 // Get the info for an account
-new AccountService({ headers: { Authorization: "Bearer " + token }}).Info()
+new AccountService({headers: { Authorization: "Bearer " + token }}).Info()
 .then(function(account){
+  console.log("WOT");
   console.log("The account is:", inspect(account.asJSON()));
 
-  return new FileDataService({stack: dropboxAuth}).Metadata({path: "/", list: "true"})
-  .then(function(response) {
-    console.log("THE FILE RESULT:", inspect(response.asJSON()));
-  });
+  // return new FileDataService({stack: dropboxAuth}).Metadata({path: "/", list: "true"})
+  // .then(function(response) {
+  //   console.log("THE FILE RESULT:", inspect(response.asJSON()));
+  // });
 
 }).catch(function(e) {
+  console.error("WOT");
   console.error(e);
 });
 
-
+} catch(err) {
+  console.error("ERROR:", err);
+}
